@@ -1,6 +1,12 @@
-variable "aws_access_key" {}
+variable "aws_access_key" {
+    type = string
+    sensitive = true
+}
 
-variable "aws_secret_key" {}
+variable "aws_secret_key" {
+    type = string
+    sensitive = true
+}
 
 variable "region" {
     default = "us-east-1"
@@ -26,13 +32,13 @@ variable "instance_conf"{
 variable "sec_groups"{
     type = list(object({
         name = string,
-        description = number,
-        ingress = object({
+        description = string,
+        ingress = list(object({
             from_port = number,
             to_port = number,
             protocol = string,
             cidr_blocks = list(string)
-        })
+        }))
     }))
 }
 

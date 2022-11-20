@@ -1,7 +1,3 @@
-variable "availabilityZone" {
-    default = "us-east-1"
-}
-
 variable "vpcCIDRblock" {
     default = "10.0.0.0/16"
 }

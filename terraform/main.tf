@@ -34,6 +34,6 @@ module "sec_groups"{
 }
 
 module "sec_inst_association"{
-  source = "./sec_inst_association"
+  source = "./modules/sec_inst_association"
   association = var.association
 }

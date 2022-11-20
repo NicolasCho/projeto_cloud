@@ -20,7 +20,6 @@ resource "aws_subnet" "subnet" {
     #Specify true to indicate that instances launched into the subnet should be assigned a public IP address. 
     map_public_ip_on_launch = true
 
-    availability_zone       = var.availabilityZone
 
     tags = {
         Name = "Public subnet"
