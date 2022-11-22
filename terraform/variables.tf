@@ -22,8 +22,7 @@ variable "users" {
 #Instancias
 variable "instance_conf"{
     type = list(object({
-        application_name = string,
-        no_of_instances = number,
+        instance_name = string,
         instance_type = string  
     }))
 }
