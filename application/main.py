@@ -13,6 +13,24 @@ import time
 #os.system("comando")          -comandos de terminal
 #os.chdir('C:\\Users\\Name\\Desktop\\testing')                  -mudar de diretorio
 
+#variáveis a serem passadas ao teradorm 
+var_dict={
+    "users": [],
+    "instance_conf" : [],
+    "sec_groups" : [],
+    "association" : []
+}
+
+
+#os.chdir("../terraform")
+if os.path.isfile("auto.tfvars.json"):
+    f  = open("auto.tfvars.json")
+    var_dict = json.load(f)
+else:
+    f = open("auto.tfvars.json")
+
+
+
 def instancias():
     while True:
         os.system("cls")
@@ -47,20 +65,27 @@ def instancias():
                 for i in range(1, n_instancias_nano+1):
                     print("Nome da instância t2.nano {}:\n".format(i))    
                     nome_nano = input("=> ")
-                    #VERIFICAR SE INSTÂNCIA JA EXISTE E SUBIR ERRO CASO POSITIVO<<<<<<<<<<<<<<<<<<<<<<<
-                    #SE NÃO, ADICIONAR AO JSON
-                
+
+                    instance = {"instance_name": nome_nano, "instance_type": "t2.nano"}
+                    var_dict["instance_conf"].append(instance)
+                    
                 print('\n\n')
                 for i in range(1, n_instancias_micro+1):
                     print("Nome da instância t2.micro {}:\n".format(i))    
                     nome_micro = input("=> ")
-                    #VERIFICAR SE INSTÂNCIA JA EXISTE E SUBIR ERRO CASO POSITIVO<<<<<<<<<<<<<<<<<<
-                    #SE NÃO, ADICIONAR AO JSON
+                    
+                    instance = {"instance_name": nome_micro, "instance_type": "t2.micro"}
+                    var_dict["instance_conf"].append(instance)
+                
+                with open('auto.tfvars.json', 'w') as fp:
+                    json.dump(var_dict, fp, indent=4)
 
                 os.system("cls")
                 print("Subindo instâncias...\n\n")
-                # SUBIR INSTÂNCIAS E PAUSAR ATÉ ACABAR<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                time.sleep(3)
+                print("--------------------------------------------------------------------------------")
+                #os.system("terraform plan -var-file='secrets.tfvars'")
+                #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                print("--------------------------------------------------------------------------------")
                 print("Operação finalizada.")
                 time.sleep(2)
 
@@ -68,8 +93,13 @@ def instancias():
             os.system("cls")
             print("TODAS AS INSTÂNCIAS")
             print("--------------------------------------------------------------------------------")
-            #LISTAR <<<<<<<<<<<<<<<<<<<<<
-            
+            i = 0
+            for instancia in (var_dict["instance_conf"]):
+                print("{} -> name:{} , type: {}".format(i, instancia["instance_name"], instancia["instance_type"]))
+                i += 1
+                print('\n')
+
+            i-=1
             print("(pressione ENTER para voltar..)")
             voltar = input("=> ")
 
@@ -77,10 +107,30 @@ def instancias():
             os.system("cls")
             print("DELETAR INSTÂNCIA")
             print("--------------------------------------------------------------------------------")
-            #LISTAR<<<<<<<<<<<<<<<<<<<<<<<<
+            i = 0
+            for instancia in (var_dict["instance_conf"]):
+                print("{} -> name:{} , type: {}".format(i, instancia["instance_name"], instancia["instance_type"]))
+                i += 1
+                print('\n')
 
+            i-=1
             print("Qual instância gostaria de deletar?\n")
-            #APAGAR DO JSON<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+            delete_instance = check_input(i, include_zero=True)
+
+            var_dict['instance_conf'].pop(delete_instance)
+
+            with open('auto.tfvars.json', 'w') as fp:
+                json.dump(var_dict, fp, indent=4)
+
+            os.system("cls")
+            print("Deletando instância...\n\n")
+            print("--------------------------------------------------------------------------------")
+            #os.system("terraform plan -var-file='secrets.tfvars'")
+            #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+            print("--------------------------------------------------------------------------------")
+            print("Operação finalizada.")
+            time.sleep(2)
 
         else:
             return
@@ -115,10 +165,22 @@ def usuarios():
                 print("--------------------------------------------------------------------------------")
                 for i in range(1, n_usuarios+1):
                     print("Nome do usuário {}:\n".format(i))    
-                    nome = input("=> ")
-                    #VERIFICAR SE USUARIO JA EXISTE E SUBIR ERRO CASO POSITIVO<<<<<<<<<<<<<<<<<<<<<<<
-                    #SE NÃO, ADICIONAR AO JSON
+                    conflict = True
+                    
+                    while conflict:
+                        conflict = False
+                        nome = input("=> ")
+                        for user in var_dict['users']:
+                            if user["name"] == nome:
+                                conflict = True
+                                print("Usuário já existe\n")
 
+                    user = {"name": nome}
+                    var_dict["users"].append(user)
+
+                with open('auto.tfvars.json', 'w') as fp:
+                    json.dump(var_dict, fp, indent=4)
+                    
                 os.system("cls")
                 print("Subindo usuários...\n\n")
                 # SUBIR USUÁRIOS E PAUSAR ATÉ ACABAR<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -252,13 +314,14 @@ def check_yes_no():
     return answer
 
 
-def check_input(n_options, include_zero = False):
+def check_input(n_options, include_zero = False, exclude_limit = False):
     floor = 0
     ceiling = n_options
     if include_zero:
         floor = -1
-        ceiling = n_options - 1
-    
+    if exclude_limit:
+        ceiling = n_options - 1 
+
     servico = floor 
     while servico == floor:
         user_input = input("=> ")
