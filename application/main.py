@@ -2,6 +2,22 @@ import os
 import json
 import time
 import ipaddress
+from dotenv import load_dotenv  
+import boto3
+
+load_dotenv()   
+ACCESS_KEY = os.environ.get("ACCESS_KEY")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+
+
+session = boto3.Session(
+    aws_access_key_id=ACCESS_KEY,
+    aws_secret_access_key=SECRET_KEY,
+    region_name='us-east-1'
+)
+
+ec2 = session.resource('ec2')
+
 
 #variáveis a serem passadas ao terraform 
 var_dict={
@@ -17,7 +33,8 @@ if os.path.isfile("auto.tfvars.json"):
     f  = open("auto.tfvars.json")
     var_dict = json.load(f)
 else:
-    f = open("auto.tfvars.json", 'x')
+    with open('auto.tfvars.json', 'w') as fp:
+        json.dump(var_dict, fp, indent=4)
 
 
 
@@ -28,6 +45,14 @@ def instancias():
         print("--------------------------------------------------------------------------------")
         print("Criar, listar ou deletar instâncias\n")
         print("  1 - Criar instância\n  2 - Listar instância\n  3 - Deletar instância\n  4 - Voltar ao menu principal\n")
+
+        for instance in ec2.instances.all():
+            print(
+                "Id: {0}\nPlatform: {1}\nType: {2}\nPublic IPv4: {3}\nAMI: {4}\nState: {5}\nENI: {6}\n".format(
+                instance.id, instance.platform, instance.instance_type, instance.public_ip_address, instance.image.id, instance.state,
+                instance.network_interfaces[0].id
+                )
+            )
 
         servico = check_input(4)
 
@@ -341,7 +366,7 @@ def sg():
                     else:
                         egress = [{"from_port":443, "to_port": 443, "protocol": "tcp", "cidr_blocks": ["0.0.0.0/0"]}]
 
-                    group = {"name": nome, "descritpion": descricao, "ingress": ingress, "egress": egress}
+                    group = {"name": nome, "description": descricao, "ingress": ingress, "egress": egress}
                     var_dict["sec_groups"].append(group)
 
                 with open('auto.tfvars.json', 'w') as fp:
