@@ -1,19 +1,9 @@
 import os
 import json
 import time
-# Transformando dicionario em JSON e escrevendo para arquivo
-# NOME DO ARQUIVO = auto.tfvars.json
+import ipaddress
 
-
-# json_object = json.dumps(dictionary, indent=4)
-# with open("sample.json", "w") as outfile:
-#     outfile.write(json_object)
-
-
-#os.system("comando")          -comandos de terminal
-#os.chdir('C:\\Users\\Name\\Desktop\\testing')                  -mudar de diretorio
-
-#variáveis a serem passadas ao teradorm 
+#variáveis a serem passadas ao terraform 
 var_dict={
     "users": [],
     "instance_conf" : [],
@@ -27,7 +17,7 @@ if os.path.isfile("auto.tfvars.json"):
     f  = open("auto.tfvars.json")
     var_dict = json.load(f)
 else:
-    f = open("auto.tfvars.json")
+    f = open("auto.tfvars.json", 'x')
 
 
 
@@ -113,24 +103,32 @@ def instancias():
                 i += 1
                 print('\n')
 
-            i-=1
-            print("Qual instância gostaria de deletar?\n")
+            if i == 0:
+                print("(pressione ENTER para voltar..)")
+                voltar = input("=> ")
+            else:
+                i-=1
+                print("Qual instância gostaria de deletar?\n")
 
-            delete_instance = check_input(i, include_zero=True)
+                delete_instance = check_input(i, include_zero=True)
 
-            var_dict['instance_conf'].pop(delete_instance)
+                print("Confirmar escolha (y/n)? \n")
+                continuar = check_yes_no()
 
-            with open('auto.tfvars.json', 'w') as fp:
-                json.dump(var_dict, fp, indent=4)
+                if continuar == 'y':
+                    var_dict['instance_conf'].pop(delete_instance)
 
-            os.system("cls")
-            print("Deletando instância...\n\n")
-            print("--------------------------------------------------------------------------------")
-            #os.system("terraform plan -var-file='secrets.tfvars'")
-            #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
-            print("--------------------------------------------------------------------------------")
-            print("Operação finalizada.")
-            time.sleep(2)
+                    with open('auto.tfvars.json', 'w') as fp:
+                        json.dump(var_dict, fp, indent=4)
+
+                    os.system("cls")
+                    print("Deletando instância...\n\n")
+                    print("--------------------------------------------------------------------------------")
+                    #os.system("terraform plan -var-file='secrets.tfvars'")
+                    #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                    print("--------------------------------------------------------------------------------")
+                    print("Operação finalizada.")
+                    time.sleep(2)
 
         else:
             return
@@ -183,8 +181,10 @@ def usuarios():
                     
                 os.system("cls")
                 print("Subindo usuários...\n\n")
-                # SUBIR USUÁRIOS E PAUSAR ATÉ ACABAR<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                time.sleep(3)
+                print("--------------------------------------------------------------------------------")
+                #os.system("terraform plan -var-file='secrets.tfvars'")
+                #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                print("--------------------------------------------------------------------------------")
                 print("Operação finalizada.")
                 time.sleep(2)
 
@@ -192,7 +192,13 @@ def usuarios():
             os.system("cls")
             print("TODOS OS USUÁRIOS")
             print("--------------------------------------------------------------------------------")
-            #LISTAR <<<<<<<<<<<<<<<<<<<<<
+            i = 0
+            for user in (var_dict["users"]):
+                print("{} -> name:{}".format(i, user["name"]))
+                i += 1
+                print('\n')
+
+            i-=1
             
             print("(pressione ENTER para voltar..)")
             voltar = input("=> ")
@@ -201,18 +207,48 @@ def usuarios():
             os.system("cls")
             print("DELETAR USUÁRIOS")
             print("--------------------------------------------------------------------------------")
-            #LISTAR<<<<<<<<<<<<<<<<<<<<<<<<
+            i = 0
+            for user in (var_dict["users"]):
+                print("{} -> name:{}".format(i, user["name"]))
+                i += 1
+                print('\n')
+            
+            if i == 0:
+                print("(pressione ENTER para voltar..)")
+                voltar = input("=> ")
+            else:
+                i-=1
+                print("Qual usuário gostaria de deletar?\n")
 
-            print("Qual usuário gostaria de deletar?\n")
+                delete_user = check_input(i, include_zero=True)
+
+                print("Confirmar escolha (y/n)? \n")
+                continuar = check_yes_no()
+
+                if continuar == 'y':
+                    var_dict['users'].pop(delete_user)
+
+                    with open('auto.tfvars.json', 'w') as fp:
+                        json.dump(var_dict, fp, indent=4)
+
+                    os.system("cls")
+                    print("Deletando usuário...\n\n")
+                    print("--------------------------------------------------------------------------------")
+                    #os.system("terraform plan -var-file='secrets.tfvars'")
+                    #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                    print("--------------------------------------------------------------------------------")
+                    print("Operação finalizada.")
+                    time.sleep(2)
+
         else:
             return
 
 def sg():
     while True:
         os.system("cls")
-        print("MENU SECURITY GROUPS")
+        print("MENU GRUPOS DE SEGURANÇA")
         print("--------------------------------------------------------------------------------")
-        print("Criar, listar ou deletar groupos de segurança\n")
+        print("Criar, listar, deletar ou associar groupos de segurança\n")
         print("  1 - Criar groupo de segurança\n  2 - Listar groupos de segurança\n  3 - Deletar groupo de segurança\n  4 - Associar grupo com instância\n  5 - Voltar ao menu principal\n")
 
         servico = check_input(5)
@@ -231,44 +267,150 @@ def sg():
             continuar = check_yes_no()
 
             if continuar == "y" and n_grupos != 0:
-                os.system("cls")
-                print("NOMES DOS GRUPOS")
-                print("--------------------------------------------------------------------------------")
                 for i in range(1, n_grupos+1):
+                    os.system("cls")
+                    print("Definição dos grupos")
+                    print("--------------------------------------------------------------------------------")
                     print("Nome do grupo {}:\n".format(i))    
-                    nome = input("=> ")
-                    #VERIFICAR SE USUARIO JA EXISTE E SUBIR ERRO CASO POSITIVO<<<<<<<<<<<<<<<<<<<<<<<
-                    #SE NÃO, ADICIONAR AO JSON
-                    print("Descrição do grupo {}:\n".format(i))    
-                    nome = input("=> ")
+                    conflict = True
+                    
+                    while conflict:
+                        conflict = False
+                        nome = input("=> ")
+                        for sec_group in var_dict['sec_groups']:
+                            if sec_group["name"] == nome:
+                                conflict = True
+                                print("Grupo de já existe\n")
 
-                    print("Definir regras de ingress {}:\n".format(i))    
-                    nome = input("=> ")
-                    #BLOCO, PROTOCOLO, PORTAS, ou deixar padrão <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                    print("Descrição do grupo {}:\n".format(i))    
+                    descricao = input("=> ")
+
+                    print("Definir regras de entrada (ingress) para {}? (y/n) ['n' para definições padrões]\n".format(i))   
+                    regras_ingress = check_yes_no()
+                    if regras_ingress == "y":
+                        print("Porta de início do intervalo: \n")   
+                        print("(porta limite = 1023)\n")   
+                        porta_inicio = check_range(0, 1023)
+
+                        print("Porta final do intervalo: \n")
+                        print("(porta limite = 1023)\n")   
+                        porta_final = check_range(porta_inicio, 1023)
+
+                        protocolo = "tcp"
+
+                        print("Definir bloco de domínio e prefixo:")
+                        print("exemplo: primeiro input => 0.0.0.0,   segundo input => 24")
+                        print("resultado: 0.0.0.0/24)\n")   
+                        ip = check_ip()
+
+                        print("\nPrefixo: (0 a 32)")
+                        prefix = check_input(32, include_zero=True)
+                        cidr_list = []
+                        cidr_block = ip + "/" + str(prefix)
+                        cidr_list.append(cidr_block)
+
+                        ingress = [{"from_port":porta_inicio, "to_port": porta_final, "protocol": protocolo, "cidr_blocks": cidr_list}]
+                    else:
+                        ingress = [{"from_port":443, "to_port": 443, "protocol": "tcp", "cidr_blocks": ["10.0.0.0/16"]}]
+
+                    print("Definir regras de saída (egress) para {}? (y/n) ['n' para definições padrões]\n".format(i))   
+                    regras_egress = check_yes_no() 
+                    if regras_egress == "y":
+                        print("Porta de início do intervalo: \n")   
+                        print("(porta limite = 1023)\n")   
+                        porta_inicio = check_range(0, 1023)
+
+                        print("Porta final do intervalo: \n")
+                        print("(porta limite = 1023)\n")   
+                        porta_final = check_range(porta_inicio, 1023)
+
+                        protocolo = "tcp"
+
+                        print("Definir bloco de domínio e prefixo:")
+                        print("exemplo: primeiro input => 0.0.0.0,   segundo input => 24")
+                        print("resultado: 0.0.0.0/24)\n")   
+                        ip = check_ip()
+
+                        print("\nPrefixo: (0 a 32)")
+                        prefix = check_input(32, include_zero=True)
+                        cidr_list = []
+                        cidr_block = ip + "/" + str(prefix)
+                        cidr_list.append(cidr_block)
+
+                        egress = [{"from_port":porta_inicio, "to_port": porta_final, "protocol": protocolo, "cidr_blocks": cidr_list}]
+                    else:
+                        egress = [{"from_port":443, "to_port": 443, "protocol": "tcp", "cidr_blocks": ["0.0.0.0/0"]}]
+
+                    group = {"name": nome, "descritpion": descricao, "ingress": ingress, "egress": egress}
+                    var_dict["sec_groups"].append(group)
+
+                with open('auto.tfvars.json', 'w') as fp:
+                    json.dump(var_dict, fp, indent=4)
 
                 os.system("cls")
-                print("Subindo grupos...\n\n")
-                # SUBIR USUÁRIOS E PAUSAR ATÉ ACABAR<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                time.sleep(3)
+                print("Criando grupos...\n\n")
+                print("--------------------------------------------------------------------------------")
+                #os.system("terraform plan -var-file='secrets.tfvars'")
+                #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                print("--------------------------------------------------------------------------------")
                 print("Operação finalizada.")
                 time.sleep(2)
 
         elif servico == 2:
             os.system("cls")
-            print("TODOS OS GRUPOS")
+            print("TODOS OS GRUPOS DE SEGURANÇA")
             print("--------------------------------------------------------------------------------")
-            #LISTAR <<<<<<<<<<<<<<<<<<<<<
+            i = 0
+            for grupo in (var_dict["sec_groups"]):
+                print("{} -> name:{}".format(i, grupo["name"]))
+                print("{} -> descrição:{}".format(i, grupo["descritpion"]))
+                print("{} -> ingress:{}".format(i, grupo["ingress"]))
+                print("{} -> egress:{}".format(i, grupo["egress"]))
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print('\n')
+                i += 1
+
+            i-=1
             
             print("(pressione ENTER para voltar..)")
             voltar = input("=> ")
 
         elif servico == 3:
             os.system("cls")
-            print("DELETAR GRUPOS")
+            print("DELETAR GRUPOS DE SEGURANÇA")
             print("--------------------------------------------------------------------------------")
-            #LISTAR<<<<<<<<<<<<<<<<<<<<<<<<
+            i = 0
+            for grupo in (var_dict["sec_groups"]):
+                print("{} -> name:{}".format(i, grupo["name"]))
+                i += 1
+                print('\n')
+            
+            if i == 0:
+                print("(pressione ENTER para voltar..)")
+                voltar = input("=> ")
+            else:
+                i-=1
+                print("Qual grupo gostaria de deletar?\n")
 
-            print("Quais grupos gostaria de deletar?\n")
+                delete_group = check_input(i, include_zero=True)
+
+                print("Confirmar escolha (y/n)? \n")
+                continuar = check_yes_no()
+
+                if continuar == 'y':
+                    var_dict['sec_groups'].pop(delete_group)
+
+                    with open('auto.tfvars.json', 'w') as fp:
+                        json.dump(var_dict, fp, indent=4)
+
+                    os.system("cls")
+                    print("Deletando grupo...\n\n")
+                    print("--------------------------------------------------------------------------------")
+                    #os.system("terraform plan -var-file='secrets.tfvars'")
+                    #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                    print("--------------------------------------------------------------------------------")
+                    print("Operação finalizada.")
+                    time.sleep(2)
 
         elif servico == 4:
             os.system("cls")
@@ -285,7 +427,7 @@ def sg():
         else:
             return
 
-
+# --------------------------------------------------------------------------------------------------------- #
 
 def main():
     while True:
@@ -306,6 +448,17 @@ def main():
         else:
             return
 
+# --------------------------------------------------------------------------------------------------------- #
+def check_ip():
+    while True:
+        try:
+            ip = str(ipaddress.ip_address(input('=> ')))
+            break
+        except ValueError:
+            continue
+    return ip
+
+
 def check_yes_no():
     answer = input("=> ")
     while answer != 'y' and answer != "n":        
@@ -313,6 +466,21 @@ def check_yes_no():
         answer = input("=> ")
     return answer
 
+def check_range(start, end):
+    valor = -1
+    while valor < 0:
+        valor = input("=> ")
+        try:
+            valor = int(valor)
+            if valor < start  or valor > end:
+                valor = -1
+                print("Entrada inválida")
+
+        except:
+            valor = -1
+            print("Entrada inválida")
+    
+    return valor
 
 def check_input(n_options, include_zero = False, exclude_limit = False):
     floor = 0
