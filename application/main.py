@@ -9,6 +9,15 @@ load_dotenv()
 ACCESS_KEY = os.environ.get("ACCESS_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
+# print(
+#     "Id: {0}\nPlatform: {1}\nType: {2}\nPublic IPv4: {3}\nAMI: {4}\nState: {5}\nENI: {6}\n".format(
+#     instance.id, instance.platform, instance.instance_type, instance.public_ip_address, instance.image.id, instance.state,
+#     instance.network_interfaces[0].id
+#     )
+# )
+
+#TODO: *Verificar associações já existentes (se positivo, retornar ao menu)
+#      *Senha de usuário
 
 session = boto3.Session(
     aws_access_key_id=ACCESS_KEY,
@@ -45,14 +54,6 @@ def instancias():
         print("--------------------------------------------------------------------------------")
         print("Criar, listar ou deletar instâncias\n")
         print("  1 - Criar instância\n  2 - Listar instância\n  3 - Deletar instância\n  4 - Voltar ao menu principal\n")
-
-        for instance in ec2.instances.all():
-            print(
-                "Id: {0}\nPlatform: {1}\nType: {2}\nPublic IPv4: {3}\nAMI: {4}\nState: {5}\nENI: {6}\n".format(
-                instance.id, instance.platform, instance.instance_type, instance.public_ip_address, instance.image.id, instance.state,
-                instance.network_interfaces[0].id
-                )
-            )
 
         servico = check_input(4)
 
@@ -441,13 +442,72 @@ def sg():
             os.system("cls")
             print("ASSOCIAR GRUPOS")
             print("--------------------------------------------------------------------------------")
-            #LISTAR<<<<<<<<<<<<<<<<<<<<<<<<
 
-            print("Qual grupo?\n")
-            id_grupo = input("=> ")
+            instances_eni = []
+            print("Lista de instâncias")
+            i = 0
+            for instance in ec2.instances.all():
+                print("{} -> name:{}".format(i,instance.tags[0]["Name"]))
+                print("{} -> type:{}".format(i,instance.instance_type))
+                instances_eni.append(instance.network_interfaces[0].id)
+                print('\n')
+                
+                i += 1
+            
+            print("################################################################################")
+            print('\n')
+            
+            response = ec2.describe_security_groups()
+            sec_groups_names = []
+            print("Lista de grupos de segurança")
+            j = 0
+            for grupo in (var_dict["sec_groups"]):
+                print("{} -> name:{}".format(j, grupo["name"]))
+                sec_groups_names.append(grupo["name"])
+                j += 1
+                print('\n')
+            print('\n')
 
-            print("Qual instância?\n")
-            id_instancia = input("=> ")
+            if i == 0 or j == 0:
+                print("(pressione ENTER para voltar..)")
+                voltar = input("=> ")
+            else:
+                i -= 1
+                j -= 1
+
+                print("Qual INSTÂNCIA?\n")
+                index_instancia = check_input(i, include_zero=True)
+
+                print("Qual GRUPO?\n")
+                index_grupo = check_input(j, include_zero=True)
+
+                print("Confirmar escolha (y/n)? \n")
+                continuar = check_yes_no()
+
+                if continuar == 'y':
+                    eni_instancia = instances_eni[index_instancia]
+                    group_name = sec_groups_names[index_grupo]
+                    response = ec2.describe_security_groups(
+                        Filters=[
+                            dict(Name='group-name', Values=[group_name])
+                        ]
+                    )
+                    group_id = response['SecurityGroups'][0]['GroupId']
+
+                    associacao = {"name":"associacao", "instance_id":eni_instancia,"security_group_id":group_id}
+                    var_dict["association"].append(associacao)
+
+                    with open('auto.tfvars.json', 'w') as fp:
+                        json.dump(var_dict, fp, indent=4)
+
+                    os.system("cls")
+                    print("Criando associação...\n\n")
+                    print("--------------------------------------------------------------------------------")
+                    #os.system("terraform plan -var-file='secrets.tfvars'")
+                    #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                    print("--------------------------------------------------------------------------------")
+                    print("Operação finalizada.")
+                    time.sleep(2)
 
         else:
             return
