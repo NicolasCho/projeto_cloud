@@ -16,8 +16,6 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 #     )
 # )
 
-#TODO: *Verificar associações já existentes (se positivo, retornar ao menu)
-#      *Senha de usuário
 
 session = boto3.Session(
     aws_access_key_id=ACCESS_KEY,
@@ -26,6 +24,7 @@ session = boto3.Session(
 )
 
 ec2 = session.resource('ec2')
+client = session.client('ec2')
 
 
 #variáveis a serem passadas ao terraform 
@@ -37,7 +36,7 @@ var_dict={
 }
 
 
-#os.chdir("../terraform")
+os.chdir("../terraform")
 if os.path.isfile("auto.tfvars.json"):
     f  = open("auto.tfvars.json")
     var_dict = json.load(f)
@@ -99,8 +98,8 @@ def instancias():
                 os.system("cls")
                 print("Subindo instâncias...\n\n")
                 print("--------------------------------------------------------------------------------")
-                #os.system("terraform plan -var-file='secrets.tfvars'")
-                #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                os.system("terraform plan -var-file='secrets.tfvars'")
+                os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
                 print("--------------------------------------------------------------------------------")
                 print("Operação finalizada.")
                 time.sleep(2)
@@ -150,8 +149,8 @@ def instancias():
                     os.system("cls")
                     print("Deletando instância...\n\n")
                     print("--------------------------------------------------------------------------------")
-                    #os.system("terraform plan -var-file='secrets.tfvars'")
-                    #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                    os.system("terraform plan -var-file='secrets.tfvars'")
+                    os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
                     print("--------------------------------------------------------------------------------")
                     print("Operação finalizada.")
                     time.sleep(2)
@@ -208,8 +207,8 @@ def usuarios():
                 os.system("cls")
                 print("Subindo usuários...\n\n")
                 print("--------------------------------------------------------------------------------")
-                #os.system("terraform plan -var-file='secrets.tfvars'")
-                #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                os.system("terraform plan -var-file='secrets.tfvars'")
+                os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
                 print("--------------------------------------------------------------------------------")
                 print("Operação finalizada.")
                 time.sleep(2)
@@ -260,8 +259,8 @@ def usuarios():
                     os.system("cls")
                     print("Deletando usuário...\n\n")
                     print("--------------------------------------------------------------------------------")
-                    #os.system("terraform plan -var-file='secrets.tfvars'")
-                    #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                    os.system("terraform plan -var-file='secrets.tfvars'")
+                    os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
                     print("--------------------------------------------------------------------------------")
                     print("Operação finalizada.")
                     time.sleep(2)
@@ -376,8 +375,8 @@ def sg():
                 os.system("cls")
                 print("Criando grupos...\n\n")
                 print("--------------------------------------------------------------------------------")
-                #os.system("terraform plan -var-file='secrets.tfvars'")
-                #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                os.system("terraform plan -var-file='secrets.tfvars'")
+                os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
                 print("--------------------------------------------------------------------------------")
                 print("Operação finalizada.")
                 time.sleep(2)
@@ -389,7 +388,7 @@ def sg():
             i = 0
             for grupo in (var_dict["sec_groups"]):
                 print("{} -> name:{}".format(i, grupo["name"]))
-                print("{} -> descrição:{}".format(i, grupo["descritpion"]))
+                print("{} -> descrição:{}".format(i, grupo["description"]))
                 print("{} -> ingress:{}".format(i, grupo["ingress"]))
                 print("{} -> egress:{}".format(i, grupo["egress"]))
                 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
@@ -424,16 +423,26 @@ def sg():
                 continuar = check_yes_no()
 
                 if continuar == 'y':
+                    group_name = var_dict['sec_groups'][delete_group]["name"]
+                    response = client.describe_security_groups(
+                        Filters=[
+                            dict(Name='group-name', Values=[group_name])
+                        ]
+                    )
+                    group_id = response['SecurityGroups'][0]['GroupId']
+                    new_list = [group for group in var_dict['association'] if group['security_group_id'] != group_id]
+                    var_dict['association'] = new_list
                     var_dict['sec_groups'].pop(delete_group)
 
                     with open('auto.tfvars.json', 'w') as fp:
                         json.dump(var_dict, fp, indent=4)
 
+
                     os.system("cls")
                     print("Deletando grupo...\n\n")
                     print("--------------------------------------------------------------------------------")
-                    #os.system("terraform plan -var-file='secrets.tfvars'")
-                    #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                    os.system("terraform plan -var-file='secrets.tfvars'")
+                    os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
                     print("--------------------------------------------------------------------------------")
                     print("Operação finalizada.")
                     time.sleep(2)
@@ -447,7 +456,7 @@ def sg():
             print("Lista de instâncias")
             i = 0
             for instance in ec2.instances.all():
-                print("{} -> name:{}".format(i,instance.tags[0]["Name"]))
+                print("{} -> name:{}".format(i,instance.tags[0]["Value"]))
                 print("{} -> type:{}".format(i,instance.instance_type))
                 instances_eni.append(instance.network_interfaces[0].id)
                 print('\n')
@@ -455,9 +464,7 @@ def sg():
                 i += 1
             
             print("################################################################################")
-            print('\n')
             
-            response = ec2.describe_security_groups()
             sec_groups_names = []
             print("Lista de grupos de segurança")
             j = 0
@@ -487,27 +494,37 @@ def sg():
                 if continuar == 'y':
                     eni_instancia = instances_eni[index_instancia]
                     group_name = sec_groups_names[index_grupo]
-                    response = ec2.describe_security_groups(
+                    response = client.describe_security_groups(
                         Filters=[
                             dict(Name='group-name', Values=[group_name])
                         ]
                     )
                     group_id = response['SecurityGroups'][0]['GroupId']
 
-                    associacao = {"name":"associacao", "instance_id":eni_instancia,"security_group_id":group_id}
-                    var_dict["association"].append(associacao)
+                    nome_associacao = eni_instancia +"_"+ group_id
 
-                    with open('auto.tfvars.json', 'w') as fp:
-                        json.dump(var_dict, fp, indent=4)
+                    conflito = False
+                    for assoc in var_dict["association"]:
+                        if assoc["name"] == nome_associacao:
+                            print("Associação ja existente. Abortando..")
+                            conflito = True
+                            time.sleep(5)
 
-                    os.system("cls")
-                    print("Criando associação...\n\n")
-                    print("--------------------------------------------------------------------------------")
-                    #os.system("terraform plan -var-file='secrets.tfvars'")
-                    #os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
-                    print("--------------------------------------------------------------------------------")
-                    print("Operação finalizada.")
-                    time.sleep(2)
+                    if not conflito:
+                        associacao = {"name": nome_associacao, "instance_id":eni_instancia,"security_group_id":group_id}
+                        var_dict["association"].append(associacao)
+
+                        with open('auto.tfvars.json', 'w') as fp:
+                            json.dump(var_dict, fp, indent=4)
+
+                        os.system("cls")
+                        print("Criando associação...\n\n")
+                        print("--------------------------------------------------------------------------------")
+                        os.system("terraform plan -var-file='secrets.tfvars'")
+                        os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                        print("--------------------------------------------------------------------------------")
+                        print("Operação finalizada.")
+                        time.sleep(2)
 
         else:
             return

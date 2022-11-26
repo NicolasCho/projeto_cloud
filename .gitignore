@@ -28,9 +28,9 @@ override.tf.json
 
 # Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
 # example: *tfplan*
-tf-key-pair
+instance_key_pair
 
-
+keys
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
