@@ -14,7 +14,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 #     instance.id, instance.platform, instance.instance_type, instance.public_ip_address, instance.image.id, instance.state,
 #     instance.network_interfaces[0].id
 #     )
-# )
+# )instance.placement['AvailabilityZone']
 
 
 session = boto3.Session(
@@ -44,7 +44,7 @@ else:
     with open('auto.tfvars.json', 'w') as fp:
         json.dump(var_dict, fp, indent=4)
 
-
+os.system('terraform init')
 
 def instancias():
     while True:
@@ -98,8 +98,8 @@ def instancias():
                 os.system("cls")
                 print("Subindo instâncias...\n\n")
                 print("--------------------------------------------------------------------------------")
-                os.system("terraform plan -var-file='secrets.tfvars'")
-                os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                os.system("terraform plan -var-file=auto.tfvars.json")
+                os.system("terraform apply -var-file=auto.tfvars.json -auto-approve")
                 print("--------------------------------------------------------------------------------")
                 print("Operação finalizada.")
                 time.sleep(2)
@@ -109,10 +109,15 @@ def instancias():
             print("TODAS AS INSTÂNCIAS")
             print("--------------------------------------------------------------------------------")
             i = 0
-            for instancia in (var_dict["instance_conf"]):
-                print("{} -> name:{} , type: {}".format(i, instancia["instance_name"], instancia["instance_type"]))
-                i += 1
-                print('\n')
+            for instance in ec2.instances.all():
+                if instance.state['Name'] != 'terminated':
+                    print("{} -> name:{}".format(i,instance.tags[0]["Value"]))
+                    print("{} -> type:{}".format(i,instance.instance_type))
+                    print("{} -> region:{}".format(i,instance.placement['AvailabilityZone']))
+                    print("{} -> status:{}".format(i,instance.state['Name']))
+                    print('\n')
+                    i += 1
+                    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
             i-=1
             print("(pressione ENTER para voltar..)")
@@ -149,8 +154,8 @@ def instancias():
                     os.system("cls")
                     print("Deletando instância...\n\n")
                     print("--------------------------------------------------------------------------------")
-                    os.system("terraform plan -var-file='secrets.tfvars'")
-                    os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                    os.system("terraform plan -var-file=auto.tfvars.json")
+                    os.system("terraform apply -var-file=auto.tfvars.json -auto-approve")
                     print("--------------------------------------------------------------------------------")
                     print("Operação finalizada.")
                     time.sleep(2)
@@ -207,8 +212,8 @@ def usuarios():
                 os.system("cls")
                 print("Subindo usuários...\n\n")
                 print("--------------------------------------------------------------------------------")
-                os.system("terraform plan -var-file='secrets.tfvars'")
-                os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                os.system("terraform plan -var-file=auto.tfvars.json")
+                os.system("terraform apply -var-file=auto.tfvars.json -auto-approve")
                 print("--------------------------------------------------------------------------------")
                 print("Operação finalizada.")
                 time.sleep(2)
@@ -259,8 +264,8 @@ def usuarios():
                     os.system("cls")
                     print("Deletando usuário...\n\n")
                     print("--------------------------------------------------------------------------------")
-                    os.system("terraform plan -var-file='secrets.tfvars'")
-                    os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                    os.system("terraform plan -var-file=auto.tfvars.json")
+                    os.system("terraform apply -var-file=auto.tfvars.json -auto-approve")
                     print("--------------------------------------------------------------------------------")
                     print("Operação finalizada.")
                     time.sleep(2)
@@ -375,8 +380,8 @@ def sg():
                 os.system("cls")
                 print("Criando grupos...\n\n")
                 print("--------------------------------------------------------------------------------")
-                os.system("terraform plan -var-file='secrets.tfvars'")
-                os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                os.system("terraform plan -var-file=auto.tfvars.json")
+                os.system("terraform apply -var-file=auto.tfvars.json -auto-approve")
                 print("--------------------------------------------------------------------------------")
                 print("Operação finalizada.")
                 time.sleep(2)
@@ -441,8 +446,8 @@ def sg():
                     os.system("cls")
                     print("Deletando grupo...\n\n")
                     print("--------------------------------------------------------------------------------")
-                    os.system("terraform plan -var-file='secrets.tfvars'")
-                    os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                    os.system("terraform plan -var-file=auto.tfvars.json")
+                    os.system("terraform apply -var-file=auto.tfvars.json -auto-approve")
                     print("--------------------------------------------------------------------------------")
                     print("Operação finalizada.")
                     time.sleep(2)
@@ -456,12 +461,12 @@ def sg():
             print("Lista de instâncias")
             i = 0
             for instance in ec2.instances.all():
-                print("{} -> name:{}".format(i,instance.tags[0]["Value"]))
-                print("{} -> type:{}".format(i,instance.instance_type))
-                instances_eni.append(instance.network_interfaces[0].id)
-                print('\n')
-                
-                i += 1
+                if instance.state['Name'] != 'terminated':
+                    print("{} -> name:{}".format(i,instance.tags[0]["Value"]))
+                    print("{} -> type:{}".format(i,instance.instance_type))
+                    instances_eni.append(instance.network_interfaces[0].id)
+                    print('\n')
+                    i += 1
             
             print("################################################################################")
             
@@ -520,8 +525,8 @@ def sg():
                         os.system("cls")
                         print("Criando associação...\n\n")
                         print("--------------------------------------------------------------------------------")
-                        os.system("terraform plan -var-file='secrets.tfvars'")
-                        os.system("terraform apply -var-file='secrets.tfvars' -auto-approve")
+                        os.system("terraform plan -var-file=auto.tfvars.json")
+                        os.system("terraform apply -var-file=auto.tfvars.json -auto-approve")
                         print("--------------------------------------------------------------------------------")
                         print("Operação finalizada.")
                         time.sleep(2)

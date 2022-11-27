@@ -24,11 +24,27 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+Para configurar credenciais, criar um arquivo *terraform.tfvars* no diretório *terraform* com:
+
+```
+aws_access_key = "{sua access key}"
+aws_secret_key = "{sua secret key}"
+```
+
+e um arquivo *.env* no diretório *application* com:
+
+```
+ACCESS_KEY = "{sua access key}"
+SECRET_KEY = "{sua secret key}"
+```
+
 Para executar a aplicação:
 
 ```
 python main.py
 ```
+
+O comando terraform init é executado no início da aplicação.
 
 ---
 ## Operação
@@ -43,6 +59,8 @@ Cada opção pode ser selecionada digitando o número correspondente:
     4. Sair da aplicação
 
 Cada serviço diferente tem um menu que se comporta da mesma forma.
+
+Uma VPC irá subir automaticamente quando a primeira alteração for realizada, assim como a subnet.
 
 ### Instâncias
 
